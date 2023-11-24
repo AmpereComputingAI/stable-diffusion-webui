@@ -23,7 +23,8 @@ class TorchHijackForUnet:
     def cat(self, tensors, *args, **kwargs):
         if len(tensors) == 2:
             a, b = tensors
-            if a.shape[-2:] != b.shape[-2:]:
+            if (torch.equal(torch.ones(a.shape[-2]), torch.ones(b.shape[-2])) and
+                    torch.equal(torch.ones(a.shape[-1]), torch.ones(b.shape[-1]))):
                 a = torch.nn.functional.interpolate(a, b.shape[-2:], mode="nearest")
 
             tensors = (a, b)
