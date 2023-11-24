@@ -325,10 +325,15 @@ def einsum_op_mps_v2(q, k, v):
 
 
 def einsum_op_tensor_mem(q, k, v, max_tensor_mb):
-    size_mb = q.shape[0] * q.shape[1] * k.shape[1] * q.element_size() // (1 << 20)
+    return einsum_op_compvis(q, k, v)
+    # size_mb = q.shape[0] * q.shape[1] * k.shape[1] * q.element_size() // (1 << 20)
+    size_mb = torch.div(torch.mul(torch.mul(torch.mul(q.shape[0], q.shape[1]), k.shape[1]), q.element_size()), 1 << 20,
+                        rounding_mode="trunc")
     if size_mb <= max_tensor_mb:
         return einsum_op_compvis(q, k, v)
-    div = 1 << int((size_mb - 1) / max_tensor_mb).bit_length()
+    # div = 1 << int((size_mb - 1) / max_tensor_mb).bit_length()
+    a = torch.div(torch.sub(size_mb, 1), 32, rounding_mode="trunc")
+    div = torch.pow(2, torch.div(torch.log2(a) + 1, 1, rounding_mode="trunc"))
     if div <= q.shape[0]:
         return einsum_op_slice_0(q, k, v, q.shape[0] // div)
     return einsum_op_slice_1(q, k, v, max(q.shape[1] // div, 1))
